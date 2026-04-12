@@ -176,6 +176,140 @@ body {
   line-height: 1.6;
 }
 
+/* ── Nav button (header) ───────────────────────────────────────────────────── */
+.nav-btn {
+  padding: 8px 16px;
+  background: rgba(255,255,255,.15);
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,.35);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+}
+.nav-btn:hover { background: rgba(255,255,255,.25); }
+
+/* ── Editing banner ────────────────────────────────────────────────────────── */
+.editing-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 18px;
+  background: #fffbeb;
+  border: 1.5px solid #f59e0b;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #92400e;
+  font-weight: 500;
+}
+.editing-banner button {
+  padding: 6px 14px;
+  background: #0f2744;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+}
+.editing-banner button:hover { background: #1e4f8c; }
+
+/* ── History page ──────────────────────────────────────────────────────────── */
+.history-empty {
+  text-align: center;
+  padding: 52px 24px;
+  color: #888;
+  font-size: 15px;
+}
+.history-empty-icon { font-size: 44px; margin-bottom: 14px; }
+.history-empty-sub  { font-size: 12px; margin-top: 8px; color: #aaa; }
+
+.history-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.history-card-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.history-client {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f2744;
+}
+.history-address {
+  font-size: 12px;
+  color: #6b7a99;
+}
+.history-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+.history-count {
+  background: #e8f0fb;
+  color: #1e4f8c;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.history-card-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.history-total {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f2744;
+}
+.history-actions {
+  display: flex;
+  gap: 8px;
+}
+.btn-edit {
+  padding: 7px 14px;
+  background: #0f2744;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-edit:hover { background: #1e4f8c; }
+.btn-delete {
+  width: 34px; height: 34px;
+  border: none;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.btn-delete:hover { background: #fca5a5; }
+
 /* ── Generate button ───────────────────────────────────────────────────────── */
 .generate-btn {
   width: 100%;

@@ -17,10 +17,23 @@ const SERVICES = [
 const fmt = (n) =>
   Number(n).toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+// ── localStorage helpers ───────────────────────────────────────────────────────
+function loadProposals() {
+  try {
+    return JSON.parse(localStorage.getItem('pergola_proposals') || '[]')
+  } catch {
+    return []
+  }
+}
+
+function persistProposals(list) {
+  localStorage.setItem('pergola_proposals', JSON.stringify(list))
+}
+
 // ── Modal ──────────────────────────────────────────────────────────────────────
 function Modal({ service, onClose, onSave }) {
-  const [qty, setQty]           = useState('')
-  const [price, setPrice]       = useState('')
+  const [qty, setQty]               = useState('')
+  const [price, setPrice]           = useState('')
   const [customName, setCustomName] = useState('')
   const [customUnit, setCustomUnit] = useState('מ"ר')
 
@@ -195,7 +208,7 @@ function QuoteDoc({ clientName, clientAddress, items, quoteRef }) {
         </div>
       </div>
 
-      {/* Footer / signature */}
+      {/* Footer */}
       <div className="qdoc-footer">
         <div className="qdoc-note">הצעת מחיר זו תקפה ל-30 יום מתאריך הנ&quot;ל.</div>
         <div className="qdoc-sig">
@@ -206,13 +219,64 @@ function QuoteDoc({ clientName, clientAddress, items, quoteRef }) {
   )
 }
 
+// ── Proposal History page ──────────────────────────────────────────────────────
+function ProposalHistory({ proposals, onEdit, onDelete, onBack }) {
+  return (
+    <div className="app" dir="rtl">
+      <header className="app-header">
+        <img src="/logo.jpg" alt="לוגו אפיק" className="header-logo" />
+        <div style={{ flex: 1 }}>
+          <h1>אפיק מערכות אלומיניום</h1>
+          <p>הצעות קודמות</p>
+        </div>
+        <button className="nav-btn" onClick={onBack}>→ חזור לטופס</button>
+      </header>
+
+      <div className="container">
+        {proposals.length === 0 ? (
+          <div className="card history-empty">
+            <div className="history-empty-icon">📋</div>
+            <div>אין הצעות שמורות עדיין</div>
+            <div className="history-empty-sub">הצעות נשמרות אוטומטית בעת יצוא PDF</div>
+          </div>
+        ) : (
+          proposals.map((p) => (
+            <div key={p.id} className="card history-card">
+              <div className="history-card-info">
+                <div className="history-client">{p.clientName || 'לקוח ללא שם'}</div>
+                {p.clientAddress && (
+                  <div className="history-address">📍 {p.clientAddress}</div>
+                )}
+                <div className="history-meta">
+                  <span>{new Date(p.createdAt).toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                  <span className="history-count">{p.items.length} פריטים</span>
+                </div>
+              </div>
+              <div className="history-card-side">
+                <div className="history-total">₪{fmt(p.total)}</div>
+                <div className="history-actions">
+                  <button className="btn-edit" onClick={() => onEdit(p)}>✏️ עריכה</button>
+                  <button className="btn-delete" onClick={() => onDelete(p.id)}>🗑️</button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Main App ───────────────────────────────────────────────────────────────────
 export default function App() {
+  const [view,          setView]          = useState('form')  // 'form' | 'history'
   const [clientName,    setClientName]    = useState('')
   const [clientAddress, setClientAddress] = useState('')
   const [items,         setItems]         = useState([])
   const [activeService, setActiveService] = useState(null)
   const [generating,    setGenerating]    = useState(false)
+  const [editingId,     setEditingId]     = useState(null)
+  const [proposals,     setProposals]     = useState([])
   const quoteRef = useRef(null)
 
   const addItem    = (item) => { setItems((prev) => [...prev, item]); setActiveService(null) }
@@ -221,6 +285,33 @@ export default function App() {
   const subtotal = items.reduce((s, i) => s + i.total, 0)
   const vat      = subtotal * VAT
   const total    = subtotal + vat
+
+  const handleViewHistory = () => {
+    setProposals(loadProposals())
+    setView('history')
+  }
+
+  const handleEdit = (proposal) => {
+    setClientName(proposal.clientName)
+    setClientAddress(proposal.clientAddress)
+    setItems(proposal.items)
+    setEditingId(proposal.id)
+    setView('form')
+  }
+
+  const handleDelete = (id) => {
+    if (!window.confirm('למחוק הצעה זו?')) return
+    const updated = proposals.filter((p) => p.id !== id)
+    setProposals(updated)
+    persistProposals(updated)
+  }
+
+  const handleNewProposal = () => {
+    setClientName('')
+    setClientAddress('')
+    setItems([])
+    setEditingId(null)
+  }
 
   const generatePDF = async () => {
     if (!quoteRef.current) return
@@ -241,7 +332,6 @@ export default function App() {
 
       pdf.addImage(imgData, 'PNG', 0, 0, imgW, imgH)
 
-      // multi-page support
       let remaining = imgH - pageH
       let offset    = 0
       while (remaining > 0) {
@@ -252,24 +342,73 @@ export default function App() {
       }
 
       pdf.save(`הצעת-מחיר-${clientName || 'לקוח'}.pdf`)
+
+      // Persist to localStorage
+      const all = loadProposals()
+      const now = new Date().toISOString()
+
+      if (editingId) {
+        const updated = all.map((p) =>
+          p.id === editingId
+            ? { ...p, clientName, clientAddress, items, subtotal, vat, total, updatedAt: now }
+            : p
+        )
+        persistProposals(updated)
+      } else {
+        const newProposal = {
+          id: Date.now().toString(),
+          clientName,
+          clientAddress,
+          items,
+          subtotal,
+          vat,
+          total,
+          createdAt: now,
+          updatedAt: now,
+        }
+        persistProposals([newProposal, ...all])
+        setEditingId(newProposal.id)
+      }
     } finally {
       setGenerating(false)
     }
   }
 
+  // ── History view ─────────────────────────────────────────────────────────────
+  if (view === 'history') {
+    return (
+      <ProposalHistory
+        proposals={proposals}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onBack={() => setView('form')}
+      />
+    )
+  }
+
+  // ── Form view ─────────────────────────────────────────────────────────────────
   return (
     <div className="app" dir="rtl">
       {/* ── App header ── */}
       <header className="app-header">
         <img src="/logo.jpg" alt="לוגו אפיק" className="header-logo" />
-        <div>
+        <div style={{ flex: 1 }}>
           <h1>אפיק מערכות אלומיניום</h1>
           <p>מערכת הצעות מחיר</p>
         </div>
+        <button className="nav-btn" onClick={handleViewHistory}>📋 הצעות קודמות</button>
       </header>
 
       <div className="container">
-        {/* Client name & address */}
+        {/* Editing banner */}
+        {editingId && (
+          <div className="editing-banner">
+            <span>✏️ עורך הצעה קיימת — שינויים יישמרו בעת יצוא PDF</span>
+            <button onClick={handleNewProposal}>+ הצעה חדשה</button>
+          </div>
+        )}
+
+        {/* Client info */}
         <div className="card">
           <label className="field-label" htmlFor="client">שם הלקוח</label>
           <input
