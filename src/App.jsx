@@ -6,12 +6,11 @@ const VAT = 0.18
 
 const SERVICES = [
   { id: 'pergola',   emoji: '🏗️', name: 'פרגולה אלומיניום', unit: 'מ"ר',    priceLabel: 'מחיר למ"ר' },
-  { id: 'roof',      emoji: '🏠', name: 'גגון',              unit: 'מ"ר',    priceLabel: 'מחיר למ"ר' },
   { id: 'lighting',  emoji: '💡', name: 'תאורה',             unit: 'מטר',   priceLabel: 'מחיר למטר' },
-  { id: 'floor',     emoji: '⬛', name: 'ריצוף',             unit: 'מ"ר',    priceLabel: 'מחיר למ"ר' },
-  { id: 'partition', emoji: '🪟', name: 'מחיצות / גדר',     unit: 'מטר',   priceLabel: 'מחיר למטר' },
+  { id: 'partition', emoji: '🪟', name: 'גדר',               unit: 'מטר',   priceLabel: 'מחיר למטר' },
   { id: 'gate',      emoji: '🚪', name: 'שער',               unit: 'יחידות', priceLabel: 'מחיר ליחידה' },
-  { id: 'shade',     emoji: '⛱️', name: 'הצללה / וילונות',  unit: 'מ"ר',    priceLabel: 'מחיר למ"ר' },
+  { id: 'shade',     emoji: '⛱️', name: 'מסכי זיפ',          unit: 'מ"ר',    priceLabel: 'מחיר למ"ר' },
+  { id: 'sliding',   emoji: '🪟', name: 'סגירה חלונות הזזה', unit: 'מ"ר',    priceLabel: 'מחיר למ"ר' },
   { id: 'custom',    emoji: '➕', name: 'פריט נוסף',         unit: '',       priceLabel: '', isCustom: true },
 ]
 
