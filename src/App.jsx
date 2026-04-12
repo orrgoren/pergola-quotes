@@ -129,8 +129,17 @@ function QuoteDoc({ clientName, items, quoteRef }) {
     <div ref={quoteRef} className="qdoc">
       {/* Header */}
       <div className="qdoc-header">
-        <div className="qdoc-company">אפיק מערכות אלומיניום</div>
-        <div className="qdoc-subtitle">הצעת מחיר</div>
+        <img src="/logo.jpg" alt="לוגו אפיק" className="qdoc-logo" />
+        <div className="qdoc-header-text">
+          <div className="qdoc-company">אפיק מערכות אלומיניום</div>
+          <div className="qdoc-subtitle">הצעת מחיר</div>
+          <div className="qdoc-contact">
+            <span>📍 אברהם בורמה שביט 1, ראשון לציון</span>
+            <span>📞 052-2544844</span>
+            <span>✉️ afikma2000@gmail.com</span>
+            <span>🌐 afikaluminumsystem.com</span>
+          </div>
+        </div>
       </div>
 
       {/* Meta */}
@@ -187,9 +196,7 @@ function QuoteDoc({ clientName, items, quoteRef }) {
       <div className="qdoc-footer">
         <div className="qdoc-note">הצעת מחיר זו תקפה ל-30 יום מתאריך הנ&quot;ל.</div>
         <div className="qdoc-sig">
-          <div className="sig-line" />
-          <div className="sig-name">אברהם פרי</div>
-          <div className="sig-title">מנכ&quot;ל, אפיק מערכות אלומיניום</div>
+          <div className="sig-name">אפיק מערכות אלומיניום</div>
         </div>
       </div>
     </div>
@@ -250,7 +257,7 @@ export default function App() {
     <div className="app" dir="rtl">
       {/* ── App header ── */}
       <header className="app-header">
-        <span className="header-icon">🏗️</span>
+        <img src="/logo.jpg" alt="לוגו אפיק" className="header-logo" />
         <div>
           <h1>אפיק מערכות אלומיניום</h1>
           <p>מערכת הצעות מחיר</p>
@@ -321,6 +328,11 @@ export default function App() {
                 <span>סה&quot;כ לתשלום</span>
                 <span>₪{fmt(total)}</span>
               </div>
+            </div>
+
+            <div className="price-notes">
+              <div>* המחירים כוללים הובלה, התקנה, אחריות מלאה ל-5 שנים.</div>
+              <div>אספקה: 30-45 ימי עסקים</div>
             </div>
 
             <button

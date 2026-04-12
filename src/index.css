@@ -20,6 +20,7 @@ body {
   box-shadow: 0 3px 16px rgba(0,0,0,.25);
 }
 .header-icon { font-size: 38px; line-height: 1; }
+.header-logo { width: 54px; height: 54px; object-fit: cover; border-radius: 8px; }
 .app-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 2px; }
 .app-header p  { font-size: 13px; opacity: .75; }
 
@@ -167,6 +168,14 @@ body {
   margin-top: 4px;
 }
 
+/* ── Price notes ────────────────────────────────────────────────────────────── */
+.price-notes {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #718096;
+  line-height: 1.6;
+}
+
 /* ── Generate button ───────────────────────────────────────────────────────── */
 .generate-btn {
   width: 100%;
@@ -304,9 +313,15 @@ body {
   padding: 22px 28px;
   border-radius: 8px;
   margin-bottom: 26px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
 }
+.qdoc-logo { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+.qdoc-header-text { display: flex; flex-direction: column; }
 .qdoc-company  { font-size: 22px; font-weight: 700; letter-spacing: .3px; }
 .qdoc-subtitle { font-size: 14px; opacity: .82; margin-top: 2px; }
+.qdoc-contact  { font-size: 11px; opacity: .75; margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
 
 /* Meta row */
 .qdoc-meta {
