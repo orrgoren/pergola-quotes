@@ -139,6 +139,15 @@ function QuoteDoc({ clientName, items, quoteRef }) {
         <div><span className="qdoc-label">תאריך:</span> <span className="qdoc-val">{today}</span></div>
       </div>
 
+      {/* Specifications */}
+      <div className="qdoc-specs">
+        <div className="qdoc-specs-title">מפרט טכני</div>
+        <div className="qdoc-specs-row">מסגרת היקפית: דאבל T 140x80, עובי 2 מ&quot;מ</div>
+        <div className="qdoc-specs-row">הצללות: 40x20, רווח 2 ס&quot;מ, עובי 1 מ&quot;מ</div>
+        <div className="qdoc-specs-row">עמודים 100x100</div>
+        <div className="qdoc-specs-row">סנטף: BH איכותי, חברת פלרם</div>
+      </div>
+
       {/* Items table */}
       <table className="qdoc-table">
         <thead>

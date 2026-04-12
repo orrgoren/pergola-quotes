@@ -318,6 +318,31 @@ body {
 .qdoc-label { font-weight: 700; color: #444; margin-left: 4px; }
 .qdoc-val   { color: #1a2332; }
 
+/* Specifications block */
+.qdoc-specs {
+  background: #f4f8fd;
+  border: 1px solid #dce5f0;
+  border-radius: 7px;
+  padding: 12px 16px;
+  margin-bottom: 22px;
+  font-size: 13px;
+}
+.qdoc-specs-title {
+  font-weight: 700;
+  color: #0f2744;
+  margin-bottom: 7px;
+  font-size: 13px;
+}
+.qdoc-specs-row {
+  color: #1a2332;
+  padding: 2px 0;
+}
+.qdoc-specs-row + .qdoc-specs-row {
+  border-top: 1px solid #e5ecf5;
+  padding-top: 4px;
+  margin-top: 2px;
+}
+
 /* Items table */
 .qdoc-table {
   width: 100%;
