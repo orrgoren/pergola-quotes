@@ -119,7 +119,7 @@ function Modal({ service, onClose, onSave }) {
 }
 
 // ── Hidden quote document (captured by html2canvas) ────────────────────────────
-function QuoteDoc({ clientName, items, quoteRef }) {
+function QuoteDoc({ clientName, clientAddress, items, quoteRef }) {
   const today    = new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' })
   const subtotal = items.reduce((s, i) => s + i.total, 0)
   const vat      = subtotal * VAT
@@ -132,7 +132,6 @@ function QuoteDoc({ clientName, items, quoteRef }) {
         <img src="/logo.jpg" alt="לוגו אפיק" className="qdoc-logo" />
         <div className="qdoc-header-text">
           <div className="qdoc-company">אפיק מערכות אלומיניום</div>
-          <div className="qdoc-subtitle">הצעת מחיר</div>
           <div className="qdoc-contact">
             <span>📍 אברהם בורמה שביט 1, ראשון לציון</span>
             <span>📞 052-2544844</span>
@@ -142,9 +141,13 @@ function QuoteDoc({ clientName, items, quoteRef }) {
         </div>
       </div>
 
+      {/* Document title */}
+      <div className="qdoc-doc-title">הצעת מחיר</div>
+
       {/* Meta */}
       <div className="qdoc-meta">
         <div><span className="qdoc-label">לקוח:</span> <span className="qdoc-val">{clientName || '—'}</span></div>
+        {clientAddress && <div><span className="qdoc-label">כתובת:</span> <span className="qdoc-val">{clientAddress}</span></div>}
         <div><span className="qdoc-label">תאריך:</span> <span className="qdoc-val">{today}</span></div>
       </div>
 
@@ -206,6 +209,7 @@ function QuoteDoc({ clientName, items, quoteRef }) {
 // ── Main App ───────────────────────────────────────────────────────────────────
 export default function App() {
   const [clientName,    setClientName]    = useState('')
+  const [clientAddress, setClientAddress] = useState('')
   const [items,         setItems]         = useState([])
   const [activeService, setActiveService] = useState(null)
   const [generating,    setGenerating]    = useState(false)
@@ -265,7 +269,7 @@ export default function App() {
       </header>
 
       <div className="container">
-        {/* Client name */}
+        {/* Client name & address */}
         <div className="card">
           <label className="field-label" htmlFor="client">שם הלקוח</label>
           <input
@@ -274,6 +278,14 @@ export default function App() {
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
             placeholder="הכנס שם לקוח..."
+          />
+          <label className="field-label" htmlFor="address" style={{ marginTop: '14px' }}>כתובת הלקוח</label>
+          <input
+            id="address"
+            className="client-input"
+            value={clientAddress}
+            onChange={(e) => setClientAddress(e.target.value)}
+            placeholder="הכנס כתובת..."
           />
         </div>
 
@@ -357,7 +369,7 @@ export default function App() {
 
       {/* Off-screen quote document for PDF rendering */}
       <div style={{ position: 'fixed', top: 0, left: '-9999px', width: '794px', pointerEvents: 'none' }}>
-        <QuoteDoc clientName={clientName} items={items} quoteRef={quoteRef} />
+        <QuoteDoc clientName={clientName} clientAddress={clientAddress} items={items} quoteRef={quoteRef} />
       </div>
     </div>
   )
