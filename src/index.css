@@ -548,6 +548,16 @@ body {
   padding: 9px 12px;
 }
 
+/* Notes block */
+.qdoc-notes {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 /* Footer */
 .qdoc-footer {
   display: flex;

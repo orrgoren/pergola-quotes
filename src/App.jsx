@@ -208,9 +208,14 @@ function QuoteDoc({ clientName, clientAddress, items, quoteRef }) {
         </div>
       </div>
 
+      {/* Notes */}
+      <div className="qdoc-notes">
+        <div>* המחירים כוללים הובלה, התקנה, אחריות מלאה ל-5 שנים.</div>
+        <div>* אספקה: 30-45 ימי עסקים</div>
+      </div>
+
       {/* Footer */}
       <div className="qdoc-footer">
-        <div className="qdoc-note">הצעת מחיר זו תקפה ל-30 יום מתאריך הנ&quot;ל.</div>
         <div className="qdoc-sig">
           <div className="sig-name">אפיק מערכות אלומיניום</div>
         </div>
@@ -479,11 +484,6 @@ export default function App() {
                 <span>סה&quot;כ לתשלום</span>
                 <span>₪{fmt(total)}</span>
               </div>
-            </div>
-
-            <div className="price-notes">
-              <div>* המחירים כוללים הובלה, התקנה, אחריות מלאה ל-5 שנים.</div>
-              <div>אספקה: 30-45 ימי עסקים</div>
             </div>
 
             <button
