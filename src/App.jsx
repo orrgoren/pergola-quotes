@@ -9,7 +9,7 @@ const SERVICES = [
   { id: 'lighting',  emoji: '💡', name: 'תאורה',             unit: 'מטר',   priceLabel: 'מחיר למטר' },
   { id: 'partition', emoji: '🪟', name: 'גדר',               unit: 'מטר',   priceLabel: 'מחיר למטר' },
   { id: 'gate',      emoji: '🚪', name: 'שער',               unit: 'יחידות', priceLabel: 'מחיר ליחידה' },
-  { id: 'shade',     emoji: '⛱️', name: 'מסכי זיפ',          unit: 'מ"ר',    priceLabel: 'מחיר למ"ר' },
+  { id: 'shade',     emoji: '⛱️', name: 'מסכי זיפ',          unit: '',       priceLabel: 'מחיר סופי', isShade: true },
   { id: 'sliding',   emoji: '🪟', name: 'סגירה חלונות הזזה', unit: 'מ"ר',    priceLabel: 'מחיר למ"ר' },
   { id: 'gutter',     emoji: '🌧️', name: 'מרזב אלומיניום',       unit: 'מטר',    priceLabel: 'מחיר למטר' },
   { id: 'screen',     emoji: '🪟', name: 'רשת הזזה',             unit: 'יחידות', priceLabel: 'מחיר ליחידה' },
@@ -40,6 +40,7 @@ const CENTAF_COLORS    = ['שקוף', 'אפור בהיר']
 const LIGHT_COLORS     = ['3000K צהוב', '4000K אור ביניים', '6000K אור לבן']
 const PARTITION_TYPES  = ['הייטק', 'הייטק זוויתי']
 const GATE_OPERATIONS   = ['כניסה', 'חשמלי', 'חניה']
+const SHADE_OPERATIONS  = ['חשמלי', 'ידני', 'קבוע']
 const SLIDING_PROFILES  = ['7000', '9000']
 
 function Modal({ service, onClose, onSave, initialItem = null }) {
@@ -58,6 +59,9 @@ function Modal({ service, onClose, onSave, initialItem = null }) {
   const [partitionProfile, setPartitionProfile] = useState(initialItem?.partitionProfile ?? '')
   const [gateColor,      setGateColor]      = useState(initialItem?.gateColor      ?? '')
   const [discountAmt, setDiscountAmt] = useState(initialItem && service.isDiscount ? String(initialItem.pricePerUnit) : '')
+  const [shadeDimensions, setShadeDimensions] = useState(initialItem?.shadeDimensions ?? '')
+  const [shadeColor,      setShadeColor]      = useState(initialItem?.shadeColor      ?? '')
+  const [shadeOperation,  setShadeOperation]  = useState(initialItem?.shadeOperation  ?? SHADE_OPERATIONS[0])
 
   const unit  = (service.isCustom || service.units) ? customUnit : service.unit
   const total = qty && price ? parseFloat(qty) * parseFloat(price) : 0
@@ -67,6 +71,21 @@ function Modal({ service, onClose, onSave, initialItem = null }) {
       const amount = parseFloat(discountAmt)
       if (!discountAmt || isNaN(amount) || amount <= 0) return
       onSave({ name: 'הנחה', quantity: 1, unit: '', pricePerUnit: amount, total: amount, isDiscount: true, serviceId: 'discount' })
+      return
+    }
+    if (service.isShade) {
+      const priceVal = parseFloat(price)
+      if (price === '' || isNaN(priceVal) || priceVal <= 0) return
+      onSave({
+        name: service.name,
+        quantity: 1,
+        unit: shadeDimensions.trim(),
+        pricePerUnit: priceVal,
+        total: priceVal,
+        shadeOperation,
+        ...(shadeColor.trim() && { shadeColor: shadeColor.trim() }),
+        serviceId: 'shade',
+      })
       return
     }
     const qtyVal   = parseFloat(qty)
@@ -159,6 +178,44 @@ function Modal({ service, onClose, onSave, initialItem = null }) {
                   ))}
                 </div>
               </div>
+            )}
+
+            {service.isShade && (
+              <>
+                <div className="field">
+                  <label>סוג תפעול</label>
+                  <div className="unit-options">
+                    {SHADE_OPERATIONS.map((o) => (
+                      <button
+                        key={o}
+                        className={`unit-btn${shadeOperation === o ? ' active' : ''}`}
+                        onClick={() => setShadeOperation(o)}
+                      >
+                        {o}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="field">
+                  <label>מידות (אופציונלי)</label>
+                  <input
+                    autoFocus
+                    value={shadeDimensions}
+                    onChange={(e) => setShadeDimensions(e.target.value)}
+                    placeholder='לדוגמה: 200x250'
+                    onKeyDown={handleKey}
+                  />
+                </div>
+                <div className="field">
+                  <label>צבע (אופציונלי)</label>
+                  <input
+                    value={shadeColor}
+                    onChange={(e) => setShadeColor(e.target.value)}
+                    placeholder='לדוגמה: אנתרציט, לבן...'
+                    onKeyDown={handleKey}
+                  />
+                </div>
+              </>
             )}
 
             {service.id === 'pergola' && (
@@ -300,24 +357,27 @@ function Modal({ service, onClose, onSave, initialItem = null }) {
               </div>
             )}
 
-            <div className="field">
-              <label>כמות ({unit})</label>
-              <input
-                type="number"
-                min="0"
-                autoFocus={!service.isCustom}
-                value={qty}
-                onChange={(e) => setQty(e.target.value)}
-                placeholder="0"
-                onKeyDown={handleKey}
-              />
-            </div>
+            {!service.isShade && (
+              <div className="field">
+                <label>כמות ({unit})</label>
+                <input
+                  type="number"
+                  min="0"
+                  autoFocus={!service.isCustom}
+                  value={qty}
+                  onChange={(e) => setQty(e.target.value)}
+                  placeholder="0"
+                  onKeyDown={handleKey}
+                />
+              </div>
+            )}
 
             <div className="field">
               <label>{service.isCustom ? 'מחיר ליחידה (₪)' : `${service.priceLabel} (₪)`}</label>
               <input
                 type="number"
                 min="0"
+                autoFocus={service.isShade}
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="0"
@@ -325,9 +385,9 @@ function Modal({ service, onClose, onSave, initialItem = null }) {
               />
             </div>
 
-            {total > 0 && (
+            {(total > 0 || (service.isShade && parseFloat(price) > 0)) && (
               <div className="modal-preview-total">
-                סה&quot;כ: <strong>₪{fmt(total)}</strong>
+                סה&quot;כ: <strong>₪{fmt(service.isShade ? parseFloat(price) : total)}</strong>
               </div>
             )}
           </>
@@ -410,8 +470,8 @@ function QuoteDoc({ clientName, clientAddress, items, quoteRef }) {
         <tbody>
           {items.map((item, i) => (
             <tr key={i} className={i % 2 === 0 ? 'even' : ''}>
-              <td>{item.isDiscount ? item.name : `${item.name}${item.centafColor ? ` | סנטף: ${item.centafColor}` : ''}${item.lightColor ? ` | ${item.lightColor}` : ''}${item.partitionType ? ` | ${item.partitionType}` : ''}${item.gateStyle ? ` | ${item.gateStyle}` : ''}${item.gateOperation ? ` | ${item.gateOperation}` : ''}${item.slidingProfile ? ` | פרופיל: ${item.slidingProfile}` : ''}${item.partitionColor ? ` | צבע: ${item.partitionColor}` : ''}${item.partitionProfile ? ` | פרופיל: ${item.partitionProfile}` : ''}${item.gateColor ? ` | צבע: ${item.gateColor}` : ''}`}</td>
-              <td>{item.isDiscount ? '—' : `${item.quantity} ${item.unit}`}</td>
+              <td>{item.isDiscount ? item.name : `${item.name}${item.centafColor ? ` | סנטף: ${item.centafColor}` : ''}${item.lightColor ? ` | ${item.lightColor}` : ''}${item.partitionType ? ` | ${item.partitionType}` : ''}${item.gateStyle ? ` | ${item.gateStyle}` : ''}${item.gateOperation ? ` | ${item.gateOperation}` : ''}${item.slidingProfile ? ` | פרופיל: ${item.slidingProfile}` : ''}${item.partitionColor ? ` | צבע: ${item.partitionColor}` : ''}${item.partitionProfile ? ` | פרופיל: ${item.partitionProfile}` : ''}${item.gateColor ? ` | צבע: ${item.gateColor}` : ''}${item.shadeOperation ? ` | ${item.shadeOperation}` : ''}${item.shadeColor ? ` | צבע: ${item.shadeColor}` : ''}`}</td>
+              <td>{item.isDiscount ? '—' : item.shadeOperation != null ? (item.unit || '—') : `${item.quantity} ${item.unit}`}</td>
               <td>{item.isDiscount ? '—' : `₪${fmt(item.pricePerUnit)}`}</td>
               <td style={item.isDiscount ? { color: '#dc2626', fontWeight: 700 } : {}}>
                 {item.isDiscount ? `-₪${fmt(item.total)}` : `₪${fmt(item.total)}`}
@@ -512,6 +572,7 @@ function inferService(item) {
   if (item.partitionType != null) return SERVICES.find((s) => s.id === 'partition')
   if (item.gateStyle      != null) return SERVICES.find((s) => s.id === 'gate')
   if (item.slidingProfile != null) return SERVICES.find((s) => s.id === 'sliding')
+  if (item.shadeOperation != null) return SERVICES.find((s) => s.id === 'shade')
   const match = SERVICES.find((s) => !s.isCustom && !s.isDiscount && item.name.startsWith(s.name))
   return match ?? SERVICES.find((s) => s.isCustom) ?? null
 }
@@ -731,10 +792,14 @@ export default function App() {
                       {item.name}
                       {item.centafColor ? ` | סנטף: ${item.centafColor}` : ''}
                       {item.lightColor     ? ` | ${item.lightColor}`     : ''}{item.partitionType ? ` | ${item.partitionType}` : ''}{item.gateStyle ? ` | ${item.gateStyle}` : ''}{item.gateOperation ? ` | ${item.gateOperation}` : ''}{item.slidingProfile ? ` | פרופיל: ${item.slidingProfile}` : ''}{item.partitionColor ? ` | צבע: ${item.partitionColor}` : ''}{item.partitionProfile ? ` | פרופיל: ${item.partitionProfile}` : ''}{item.gateColor ? ` | צבע: ${item.gateColor}` : ''}
+                      {item.shadeOperation ? ` | ${item.shadeOperation}` : ''}{item.shadeColor ? ` | צבע: ${item.shadeColor}` : ''}
                     </span>
                     {!item.isDiscount && (
                       <span className="item-detail">
-                        {item.quantity} {item.unit} × ₪{fmt(item.pricePerUnit)}
+                        {item.shadeOperation != null
+                          ? item.unit ? `מידות: ${item.unit}` : ''
+                          : `${item.quantity} ${item.unit} × ₪${fmt(item.pricePerUnit)}`
+                        }
                       </span>
                     )}
                   </div>
