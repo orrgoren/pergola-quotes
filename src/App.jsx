@@ -445,7 +445,7 @@ function QuoteDoc({ clientName, clientAddress, items, quoteRef }) {
           <div className="qdoc-specs-title">מפרט טכני</div>
           {hasPergola && (
             <>
-              <div className="qdoc-specs-row">מסגרת היקפית: דאבל T 140x80, עובי 2 מ&quot;מ</div>
+              <div className="qdoc-specs-row">מסגרת היקפית: דאבל T מידה 140x80, עובי 2 מ&quot;מ</div>
               <div className="qdoc-specs-row">הצללות: 40x20, רווח 2 ס&quot;מ, עובי 1 מ&quot;מ</div>
               <div className="qdoc-specs-row">עמודים 100x100</div>
               <div className="qdoc-specs-row">סנטף: BH איכותי, חברת פלרם</div>
