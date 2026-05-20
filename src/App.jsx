@@ -11,7 +11,12 @@ const SERVICES = [
   { id: 'gate',      emoji: '🚪', name: 'שער',               unit: 'יחידות', priceLabel: 'מחיר ליחידה' },
   { id: 'shade',     emoji: '⛱️', name: 'מסכי זיפ',          unit: 'מ"ר',    priceLabel: 'מחיר למ"ר' },
   { id: 'sliding',   emoji: '🪟', name: 'סגירה חלונות הזזה', unit: 'מ"ר',    priceLabel: 'מחיר למ"ר' },
+  { id: 'gutter',     emoji: '🌧️', name: 'מרזב אלומיניום',       unit: 'מטר',    priceLabel: 'מחיר למטר' },
+  { id: 'screen',     emoji: '🪟', name: 'רשת הזזה',             unit: 'יחידות', priceLabel: 'מחיר ליחידה' },
+  { id: 'demolition', emoji: '🔨', name: 'פירוק פרגולה קיימת',  units: ['יחידות', 'מ"ר'], priceLabel: 'מחיר' },
+  { id: 'crane',      emoji: '🏗️', name: 'מנוף',                 unit: 'יחידות', priceLabel: 'מחיר ליחידה' },
   { id: 'custom',    emoji: '➕', name: 'פריט נוסף',         unit: '',       priceLabel: '', isCustom: true },
+  { id: 'discount',  emoji: '🏷️', name: 'הנחה',              unit: '',       priceLabel: '', isDiscount: true },
 ]
 
 const fmt = (n) =>
@@ -31,24 +36,57 @@ function persistProposals(list) {
 }
 
 // ── Modal ──────────────────────────────────────────────────────────────────────
-function Modal({ service, onClose, onSave }) {
-  const [qty, setQty]               = useState('')
-  const [price, setPrice]           = useState('')
-  const [customName, setCustomName] = useState('')
-  const [customUnit, setCustomUnit] = useState('מ"ר')
+const CENTAF_COLORS    = ['שקוף', 'אפור בהיר']
+const LIGHT_COLORS     = ['3000K צהוב', '4000K אור ביניים', '6000K אור לבן']
+const PARTITION_TYPES  = ['הייטק', 'הייטק זוויתי']
+const GATE_OPERATIONS   = ['כניסה', 'חשמלי', 'חניה']
+const SLIDING_PROFILES  = ['7000', '9000']
 
-  const unit  = service.isCustom ? customUnit : service.unit
+function Modal({ service, onClose, onSave, initialItem = null }) {
+  const [qty, setQty]                 = useState(initialItem ? String(initialItem.quantity)     : '')
+  const [price, setPrice]             = useState(initialItem ? String(initialItem.pricePerUnit) : '')
+  const [customName, setCustomName]   = useState(initialItem && service.isCustom  ? initialItem.name : '')
+  const [customUnit, setCustomUnit]   = useState(initialItem?.unit ?? (service.units?.[0] ?? 'מ"ר'))
+  const [centafColor, setCentafColor] = useState(initialItem?.centafColor         ?? CENTAF_COLORS[0])
+  const [zone, setZone]               = useState(initialItem && service.id === 'pergola' ? initialItem.name.slice(service.name.length).trim() : '')
+  const [lightColor, setLightColor]       = useState(initialItem?.lightColor      ?? LIGHT_COLORS[0])
+  const [partitionType, setPartitionType] = useState(initialItem?.partitionType ?? PARTITION_TYPES[0])
+  const [gateStyle,      setGateStyle]      = useState(initialItem?.gateStyle      ?? PARTITION_TYPES[0])
+  const [gateOperation,  setGateOperation]  = useState(initialItem?.gateOperation  ?? GATE_OPERATIONS[0])
+  const [slidingProfile,   setSlidingProfile]   = useState(initialItem?.slidingProfile   ?? SLIDING_PROFILES[0])
+  const [partitionColor,   setPartitionColor]   = useState(initialItem?.partitionColor   ?? '')
+  const [partitionProfile, setPartitionProfile] = useState(initialItem?.partitionProfile ?? '')
+  const [gateColor,      setGateColor]      = useState(initialItem?.gateColor      ?? '')
+  const [discountAmt, setDiscountAmt] = useState(initialItem && service.isDiscount ? String(initialItem.pricePerUnit) : '')
+
+  const unit  = (service.isCustom || service.units) ? customUnit : service.unit
   const total = qty && price ? parseFloat(qty) * parseFloat(price) : 0
 
   const handleSave = () => {
-    if (!qty || !price || parseFloat(qty) <= 0 || parseFloat(price) <= 0) return
+    if (service.isDiscount) {
+      const amount = parseFloat(discountAmt)
+      if (!discountAmt || isNaN(amount) || amount <= 0) return
+      onSave({ name: 'הנחה', quantity: 1, unit: '', pricePerUnit: amount, total: amount, isDiscount: true, serviceId: 'discount' })
+      return
+    }
+    const qtyVal   = parseFloat(qty)
+    const priceVal = parseFloat(price)
+    if (!qty || qtyVal <= 0 || price === '' || isNaN(priceVal)) return
+    if (priceVal < 0) return
+    if (!service.isCustom && priceVal <= 0) return
     if (service.isCustom && !customName.trim()) return
     onSave({
-      name:         service.isCustom ? customName.trim() : service.name,
+      name:         service.isCustom ? customName.trim() : service.id === 'pergola' && zone.trim() ? `${service.name} ${zone.trim()}` : service.name,
       quantity:     parseFloat(qty),
       unit,
       pricePerUnit: parseFloat(price),
       total:        parseFloat(qty) * parseFloat(price),
+      ...(service.id === 'pergola'    && { centafColor }),
+      ...(service.id === 'lighting'  && { lightColor }),
+      ...(service.id === 'partition' && { partitionType, ...(partitionColor.trim() && { partitionColor: partitionColor.trim() }), ...(partitionProfile.trim() && { partitionProfile: partitionProfile.trim() }) }),
+      ...(service.id === 'gate'      && { gateStyle, gateOperation, ...(gateColor.trim() && { gateColor: gateColor.trim() }) }),
+      ...(service.id === 'sliding'   && { slidingProfile }),
+      serviceId: service.id,
     })
   }
 
@@ -62,68 +100,241 @@ function Modal({ service, onClose, onSave }) {
           <h2>{service.name}</h2>
         </div>
 
-        {service.isCustom && (
+        {service.isDiscount ? (
+          <div className="field">
+            <label>סכום הנחה (₪)</label>
+            <input
+              type="number"
+              min="0"
+              autoFocus
+              value={discountAmt}
+              onChange={(e) => setDiscountAmt(e.target.value)}
+              placeholder="0"
+              onKeyDown={handleKey}
+            />
+          </div>
+        ) : (
           <>
+            {service.isCustom && (
+              <>
+                <div className="field">
+                  <label>שם הפריט</label>
+                  <input
+                    autoFocus
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    placeholder="לדוגמה: ברזנט, עמודים..."
+                    onKeyDown={handleKey}
+                  />
+                </div>
+                <div className="field">
+                  <label>יחידת מידה</label>
+                  <div className="unit-options">
+                    {['מ"ר', 'מטר', 'יחידות'].map((u) => (
+                      <button
+                        key={u}
+                        className={`unit-btn${customUnit === u ? ' active' : ''}`}
+                        onClick={() => setCustomUnit(u)}
+                      >
+                        {u}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {service.units && !service.isCustom && (
+              <div className="field">
+                <label>יחידת מידה</label>
+                <div className="unit-options">
+                  {service.units.map((u) => (
+                    <button
+                      key={u}
+                      className={`unit-btn${customUnit === u ? ' active' : ''}`}
+                      onClick={() => setCustomUnit(u)}
+                    >
+                      {u}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {service.id === 'pergola' && (
+              <>
+                <div className="field">
+                  <label>צבע סנטף</label>
+                  <div className="unit-options">
+                    {CENTAF_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        className={`unit-btn${centafColor === c ? ' active' : ''}`}
+                        onClick={() => setCentafColor(c)}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="field">
+                  <label>איזור</label>
+                  <input
+                    value={zone}
+                    onChange={(e) => setZone(e.target.value)}
+                    placeholder="לדוגמה: קדמית, אחורית..."
+                    onKeyDown={handleKey}
+                  />
+                </div>
+              </>
+            )}
+
+            {service.id === 'lighting' && (
+              <div className="field">
+                <label>צבע אור</label>
+                <div className="unit-options">
+                  {LIGHT_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      className={`unit-btn${lightColor === c ? ' active' : ''}`}
+                      onClick={() => setLightColor(c)}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {service.id === 'partition' && (
+              <>
+                <div className="field">
+                  <label>סוג גדר</label>
+                  <div className="unit-options">
+                    {PARTITION_TYPES.map((t) => (
+                      <button
+                        key={t}
+                        className={`unit-btn${partitionType === t ? ' active' : ''}`}
+                        onClick={() => setPartitionType(t)}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="field">
+                  <label>צבע (אופציונלי)</label>
+                  <input
+                    value={partitionColor}
+                    onChange={(e) => setPartitionColor(e.target.value)}
+                    placeholder="לדוגמה: אנתרציט, לבן..."
+                    onKeyDown={handleKey}
+                  />
+                </div>
+                <div className="field">
+                  <label>סוג פרופיל (אופציונלי)</label>
+                  <input
+                    value={partitionProfile}
+                    onChange={(e) => setPartitionProfile(e.target.value)}
+                    placeholder="לדוגמה: 40x40, 60x40..."
+                    onKeyDown={handleKey}
+                  />
+                </div>
+              </>
+            )}
+
+            {service.id === 'gate' && (
+              <>
+                <div className="field">
+                  <label>סוג שער</label>
+                  <div className="unit-options">
+                    {PARTITION_TYPES.map((t) => (
+                      <button
+                        key={t}
+                        className={`unit-btn${gateStyle === t ? ' active' : ''}`}
+                        onClick={() => setGateStyle(t)}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="field">
+                  <label>סוג פתיחה</label>
+                  <div className="unit-options">
+                    {GATE_OPERATIONS.map((o) => (
+                      <button
+                        key={o}
+                        className={`unit-btn${gateOperation === o ? ' active' : ''}`}
+                        onClick={() => setGateOperation(o)}
+                      >
+                        {o}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="field">
+                  <label>צבע (אופציונלי)</label>
+                  <input
+                    value={gateColor}
+                    onChange={(e) => setGateColor(e.target.value)}
+                    placeholder="לדוגמה: אנתרציט, לבן..."
+                    onKeyDown={handleKey}
+                  />
+                </div>
+              </>
+            )}
+
+            {service.id === 'sliding' && (
+              <div className="field">
+                <label>סוג פרופיל</label>
+                <select
+                  className="field-select"
+                  value={slidingProfile}
+                  onChange={(e) => setSlidingProfile(e.target.value)}
+                >
+                  {SLIDING_PROFILES.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="field">
-              <label>שם הפריט</label>
+              <label>כמות ({unit})</label>
               <input
-                autoFocus
-                value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
-                placeholder="לדוגמה: ברזנט, עמודים..."
+                type="number"
+                min="0"
+                autoFocus={!service.isCustom}
+                value={qty}
+                onChange={(e) => setQty(e.target.value)}
+                placeholder="0"
                 onKeyDown={handleKey}
               />
             </div>
+
             <div className="field">
-              <label>יחידת מידה</label>
-              <div className="unit-options">
-                {['מ"ר', 'מטר', 'יחידות'].map((u) => (
-                  <button
-                    key={u}
-                    className={`unit-btn${customUnit === u ? ' active' : ''}`}
-                    onClick={() => setCustomUnit(u)}
-                  >
-                    {u}
-                  </button>
-                ))}
-              </div>
+              <label>{service.isCustom ? 'מחיר ליחידה (₪)' : `${service.priceLabel} (₪)`}</label>
+              <input
+                type="number"
+                min="0"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="0"
+                onKeyDown={handleKey}
+              />
             </div>
+
+            {total > 0 && (
+              <div className="modal-preview-total">
+                סה&quot;כ: <strong>₪{fmt(total)}</strong>
+              </div>
+            )}
           </>
         )}
 
-        <div className="field">
-          <label>כמות ({unit})</label>
-          <input
-            type="number"
-            min="0"
-            autoFocus={!service.isCustom}
-            value={qty}
-            onChange={(e) => setQty(e.target.value)}
-            placeholder="0"
-            onKeyDown={handleKey}
-          />
-        </div>
-
-        <div className="field">
-          <label>{service.isCustom ? 'מחיר ליחידה (₪)' : `${service.priceLabel} (₪)`}</label>
-          <input
-            type="number"
-            min="0"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            placeholder="0"
-            onKeyDown={handleKey}
-          />
-        </div>
-
-        {total > 0 && (
-          <div className="modal-preview-total">
-            סה&quot;כ: <strong>₪{fmt(total)}</strong>
-          </div>
-        )}
-
         <div className="modal-actions">
-          <button className="btn-primary" onClick={handleSave}>הוסף לרשימה ✓</button>
+          <button className="btn-primary" onClick={handleSave}>{initialItem ? 'עדכן ✓' : 'הוסף לרשימה ✓'}</button>
           <button className="btn-secondary" onClick={onClose}>ביטול</button>
         </div>
       </div>
@@ -133,10 +344,14 @@ function Modal({ service, onClose, onSave }) {
 
 // ── Hidden quote document (captured by html2canvas) ────────────────────────────
 function QuoteDoc({ clientName, clientAddress, items, quoteRef }) {
-  const today    = new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' })
-  const subtotal = items.reduce((s, i) => s + i.total, 0)
-  const vat      = subtotal * VAT
-  const total    = subtotal + vat
+  const today         = new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' })
+  const regularItems  = items.filter((i) => !i.isDiscount)
+  const discountTotal = items.filter((i) => i.isDiscount).reduce((s, i) => s + i.total, 0)
+  const subtotal      = regularItems.reduce((s, i) => s + i.total, 0)
+  const vat           = subtotal * VAT
+  const total         = subtotal + vat - discountTotal
+  const hasPergola    = items.some((i) => i.centafColor   != null)
+  const hasSliding    = items.some((i) => i.slidingProfile != null)
 
   return (
     <div ref={quoteRef} className="qdoc">
@@ -164,14 +379,23 @@ function QuoteDoc({ clientName, clientAddress, items, quoteRef }) {
         <div><span className="qdoc-label">תאריך:</span> <span className="qdoc-val">{today}</span></div>
       </div>
 
-      {/* Specifications */}
-      <div className="qdoc-specs">
-        <div className="qdoc-specs-title">מפרט טכני</div>
-        <div className="qdoc-specs-row">מסגרת היקפית: דאבל T 140x80, עובי 2 מ&quot;מ</div>
-        <div className="qdoc-specs-row">הצללות: 40x20, רווח 2 ס&quot;מ, עובי 1 מ&quot;מ</div>
-        <div className="qdoc-specs-row">עמודים 100x100</div>
-        <div className="qdoc-specs-row">סנטף: BH איכותי, חברת פלרם</div>
-      </div>
+      {/* Specifications — shown when pergola and/or sliding windows are in the quote */}
+      {(hasPergola || hasSliding) && (
+        <div className="qdoc-specs">
+          <div className="qdoc-specs-title">מפרט טכני</div>
+          {hasPergola && (
+            <>
+              <div className="qdoc-specs-row">מסגרת היקפית: דאבל T 140x80, עובי 2 מ&quot;מ</div>
+              <div className="qdoc-specs-row">הצללות: 40x20, רווח 2 ס&quot;מ, עובי 1 מ&quot;מ</div>
+              <div className="qdoc-specs-row">עמודים 100x100</div>
+              <div className="qdoc-specs-row">סנטף: BH איכותי, חברת פלרם</div>
+            </>
+          )}
+          {hasSliding && (
+            <div className="qdoc-specs-row">זכוכית טריפלקס 4*4</div>
+          )}
+        </div>
+      )}
 
       {/* Items table */}
       <table className="qdoc-table">
@@ -186,10 +410,12 @@ function QuoteDoc({ clientName, clientAddress, items, quoteRef }) {
         <tbody>
           {items.map((item, i) => (
             <tr key={i} className={i % 2 === 0 ? 'even' : ''}>
-              <td>{item.name}</td>
-              <td>{item.quantity} {item.unit}</td>
-              <td>₪{fmt(item.pricePerUnit)}</td>
-              <td>₪{fmt(item.total)}</td>
+              <td>{item.isDiscount ? item.name : `${item.name}${item.centafColor ? ` | סנטף: ${item.centafColor}` : ''}${item.lightColor ? ` | ${item.lightColor}` : ''}${item.partitionType ? ` | ${item.partitionType}` : ''}${item.gateStyle ? ` | ${item.gateStyle}` : ''}${item.gateOperation ? ` | ${item.gateOperation}` : ''}${item.slidingProfile ? ` | פרופיל: ${item.slidingProfile}` : ''}${item.partitionColor ? ` | צבע: ${item.partitionColor}` : ''}${item.partitionProfile ? ` | פרופיל: ${item.partitionProfile}` : ''}${item.gateColor ? ` | צבע: ${item.gateColor}` : ''}`}</td>
+              <td>{item.isDiscount ? '—' : `${item.quantity} ${item.unit}`}</td>
+              <td>{item.isDiscount ? '—' : `₪${fmt(item.pricePerUnit)}`}</td>
+              <td style={item.isDiscount ? { color: '#dc2626', fontWeight: 700 } : {}}>
+                {item.isDiscount ? `-₪${fmt(item.total)}` : `₪${fmt(item.total)}`}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -203,6 +429,11 @@ function QuoteDoc({ clientName, clientAddress, items, quoteRef }) {
         <div className="qdoc-total-row">
           <span>מע&quot;מ (18%):</span><span>₪{fmt(vat)}</span>
         </div>
+        {discountTotal > 0 && (
+          <div className="qdoc-total-row" style={{ color: '#dc2626' }}>
+            <span>הנחה:</span><span>-₪{fmt(discountTotal)}</span>
+          </div>
+        )}
         <div className="qdoc-total-row final">
           <span>סה&quot;כ לתשלום:</span><span>₪{fmt(total)}</span>
         </div>
@@ -272,24 +503,58 @@ function ProposalHistory({ proposals, onEdit, onDelete, onBack }) {
   )
 }
 
+// ── Infer the SERVICES entry for an already-saved item (supports legacy items without serviceId) ──
+function inferService(item) {
+  if (item.serviceId) return SERVICES.find((s) => s.id === item.serviceId) ?? null
+  if (item.isDiscount)          return SERVICES.find((s) => s.id === 'discount')
+  if (item.centafColor   != null) return SERVICES.find((s) => s.id === 'pergola')
+  if (item.lightColor    != null) return SERVICES.find((s) => s.id === 'lighting')
+  if (item.partitionType != null) return SERVICES.find((s) => s.id === 'partition')
+  if (item.gateStyle      != null) return SERVICES.find((s) => s.id === 'gate')
+  if (item.slidingProfile != null) return SERVICES.find((s) => s.id === 'sliding')
+  const match = SERVICES.find((s) => !s.isCustom && !s.isDiscount && item.name.startsWith(s.name))
+  return match ?? SERVICES.find((s) => s.isCustom) ?? null
+}
+
 // ── Main App ───────────────────────────────────────────────────────────────────
 export default function App() {
-  const [view,          setView]          = useState('form')  // 'form' | 'history'
-  const [clientName,    setClientName]    = useState('')
-  const [clientAddress, setClientAddress] = useState('')
-  const [items,         setItems]         = useState([])
-  const [activeService, setActiveService] = useState(null)
-  const [generating,    setGenerating]    = useState(false)
-  const [editingId,     setEditingId]     = useState(null)
-  const [proposals,     setProposals]     = useState([])
+  const [view,            setView]            = useState('form')  // 'form' | 'history'
+  const [clientName,      setClientName]      = useState('')
+  const [clientAddress,   setClientAddress]   = useState('')
+  const [items,           setItems]           = useState([])
+  const [activeService,   setActiveService]   = useState(null)
+  const [editingItemIdx,  setEditingItemIdx]  = useState(null)
+  const [generating,      setGenerating]      = useState(false)
+  const [showPreview,     setShowPreview]     = useState(false)
+  const [editingId,       setEditingId]       = useState(null)
+  const [proposals,       setProposals]       = useState([])
   const quoteRef = useRef(null)
 
-  const addItem    = (item) => { setItems((prev) => [...prev, item]); setActiveService(null) }
-  const removeItem = (idx)  => setItems((prev) => prev.filter((_, i) => i !== idx))
+  const closeModal = () => { setActiveService(null); setEditingItemIdx(null) }
 
-  const subtotal = items.reduce((s, i) => s + i.total, 0)
-  const vat      = subtotal * VAT
-  const total    = subtotal + vat
+  const saveItem = (item) => {
+    if (editingItemIdx !== null) {
+      setItems((prev) => prev.map((it, i) => i === editingItemIdx ? item : it))
+    } else {
+      setItems((prev) => [...prev, item])
+    }
+    closeModal()
+  }
+
+  const openItemEdit = (idx) => {
+    const svc = inferService(items[idx])
+    if (!svc) return
+    setEditingItemIdx(idx)
+    setActiveService(svc)
+  }
+
+  const removeItem = (idx) => setItems((prev) => prev.filter((_, i) => i !== idx))
+
+  const regularItems  = items.filter((i) => !i.isDiscount)
+  const discountTotal = items.filter((i) => i.isDiscount).reduce((s, i) => s + i.total, 0)
+  const subtotal      = regularItems.reduce((s, i) => s + i.total, 0)
+  const vat           = subtotal * VAT
+  const total         = subtotal + vat - discountTotal
 
   const handleViewHistory = () => {
     setProposals(loadProposals())
@@ -346,7 +611,9 @@ export default function App() {
         remaining -= pageH
       }
 
-      pdf.save(`הצעת-מחיר-${clientName || 'לקוח'}.pdf`)
+      const saveDate = new Date()
+      const ts = `${saveDate.getDate().toString().padStart(2,'0')}-${(saveDate.getMonth()+1).toString().padStart(2,'0')}-${String(saveDate.getFullYear()).slice(2)}_${saveDate.getHours().toString().padStart(2,'0')}-${saveDate.getMinutes().toString().padStart(2,'0')}`
+      pdf.save(`הצעת-מחיר-${clientName || 'לקוח'}-${ts}.pdf`)
 
       // Persist to localStorage
       const all = loadProposals()
@@ -440,7 +707,7 @@ export default function App() {
             {SERVICES.map((svc) => (
               <button
                 key={svc.id}
-                className="service-card"
+                className={`service-card${svc.isDiscount ? ' service-card-discount' : ''}`}
                 onClick={() => setActiveService(svc)}
               >
                 <span className="svc-emoji">{svc.emoji}</span>
@@ -460,12 +727,21 @@ export default function App() {
               {items.map((item, i) => (
                 <div key={i} className="item-row">
                   <div className="item-info">
-                    <span className="item-name">{item.name}</span>
-                    <span className="item-detail">
-                      {item.quantity} {item.unit} × ₪{fmt(item.pricePerUnit)}
+                    <span className="item-name">
+                      {item.name}
+                      {item.centafColor ? ` | סנטף: ${item.centafColor}` : ''}
+                      {item.lightColor     ? ` | ${item.lightColor}`     : ''}{item.partitionType ? ` | ${item.partitionType}` : ''}{item.gateStyle ? ` | ${item.gateStyle}` : ''}{item.gateOperation ? ` | ${item.gateOperation}` : ''}{item.slidingProfile ? ` | פרופיל: ${item.slidingProfile}` : ''}{item.partitionColor ? ` | צבע: ${item.partitionColor}` : ''}{item.partitionProfile ? ` | פרופיל: ${item.partitionProfile}` : ''}{item.gateColor ? ` | צבע: ${item.gateColor}` : ''}
                     </span>
+                    {!item.isDiscount && (
+                      <span className="item-detail">
+                        {item.quantity} {item.unit} × ₪{fmt(item.pricePerUnit)}
+                      </span>
+                    )}
                   </div>
-                  <span className="item-total">₪{fmt(item.total)}</span>
+                  <span className="item-total" style={item.isDiscount ? { color: '#dc2626' } : {}}>
+                    {item.isDiscount ? '-' : ''}₪{fmt(item.total)}
+                  </span>
+                  <button className="btn-item-edit" onClick={() => openItemEdit(i)} title="ערוך">✏️</button>
                   <button className="remove-btn" onClick={() => removeItem(i)} title="הסר">✕</button>
                 </div>
               ))}
@@ -480,19 +756,30 @@ export default function App() {
                 <span>מע&quot;מ 18%</span>
                 <span>₪{fmt(vat)}</span>
               </div>
+              {discountTotal > 0 && (
+                <div className="summary-row" style={{ color: '#dc2626' }}>
+                  <span>הנחה</span>
+                  <span>-₪{fmt(discountTotal)}</span>
+                </div>
+              )}
               <div className="summary-row summary-total">
                 <span>סה&quot;כ לתשלום</span>
                 <span>₪{fmt(total)}</span>
               </div>
             </div>
 
-            <button
-              className="generate-btn"
-              onClick={generatePDF}
-              disabled={generating}
-            >
-              {generating ? 'מייצר PDF...' : '📄 הפק הצעת מחיר PDF'}
-            </button>
+            <div className="action-buttons">
+              <button className="preview-btn" onClick={() => setShowPreview(true)}>
+                👁 תצוגה מקדימה
+              </button>
+              <button
+                className="generate-btn"
+                onClick={generatePDF}
+                disabled={generating}
+              >
+                {generating ? 'מייצר PDF...' : '📄 הפק הצעת מחיר PDF'}
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -501,8 +788,9 @@ export default function App() {
       {activeService && (
         <Modal
           service={activeService}
-          onClose={() => setActiveService(null)}
-          onSave={addItem}
+          onClose={closeModal}
+          onSave={saveItem}
+          initialItem={editingItemIdx !== null ? items[editingItemIdx] : null}
         />
       )}
 
@@ -510,6 +798,18 @@ export default function App() {
       <div style={{ position: 'fixed', top: 0, left: '-9999px', width: '794px', pointerEvents: 'none' }}>
         <QuoteDoc clientName={clientName} clientAddress={clientAddress} items={items} quoteRef={quoteRef} />
       </div>
+
+      {/* Preview overlay */}
+      {showPreview && (
+        <div className="preview-overlay" onClick={() => setShowPreview(false)}>
+          <div className="preview-toolbar" onClick={(e) => e.stopPropagation()}>
+            <button className="preview-close-btn" onClick={() => setShowPreview(false)}>✕ סגור</button>
+          </div>
+          <div className="preview-doc-wrapper" onClick={(e) => e.stopPropagation()}>
+            <QuoteDoc clientName={clientName} clientAddress={clientAddress} items={items} quoteRef={null} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
